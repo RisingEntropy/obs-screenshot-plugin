@@ -412,15 +412,25 @@ static void screenshot_filter_remove(void *data, obs_source_t *context)
 
 static void screenshot_filter_tick(void *data, float t)
 {
+	uint32_t width = 0;
+	uint32_t height = 0;
+
 	struct screenshot_filter_data *filter = data;
 
 	obs_source_t *target = obs_filter_get_target(filter->context);
 
-	if (!target) {
+	if (target)
+	{
+		width = obs_source_get_base_width(target);
+		height = obs_source_get_base_height(target);
+	}
+
+	if (width == 0 || height == 0) {
 		filter->width = 0;
 		filter->height = 0;
 
 		if (filter->staging_texture) {
+			info("Freeing Staging texture: %x", filter->staging_texture);
 			obs_enter_graphics();
 			gs_stagesurface_destroy(filter->staging_texture);
 			obs_leave_graphics();
@@ -434,9 +444,6 @@ static void screenshot_filter_tick(void *data, float t)
 
 		return;
 	}
-
-	uint32_t width = obs_source_get_base_width(target);
-	uint32_t height = obs_source_get_base_height(target);
 
 	WaitForSingleObject(filter->mutex, INFINITE);
 	bool update = false;
