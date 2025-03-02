@@ -3,7 +3,7 @@ param(
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
     [string] $Configuration = 'RelWithDebInfo',
     [ValidateSet('x86', 'x64')]
-    [string] $Target,
+    [string] $Target = 'x64',
     [ValidateSet('Visual Studio 17 2022', 'Visual Studio 16 2019')]
     [string] $CMakeGenerator,
     [switch] $SkipAll,
