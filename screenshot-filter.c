@@ -35,6 +35,7 @@ static bool put_data(char *url, uint8_t *buf, size_t len, char *content_type,
 
 #define SETTING_DESTINATION_FOLDER "destination_folder"
 #define SETTING_DESTINATION_PATH "destinaton_path"
+#define SETTING_DESTINATION_PATH_INFO "destinaton_path_info"
 #define SETTING_DESTINATION_URL "destination_url"
 #define SETTING_DESTINATION_SHMEM "destination_shmem"
 
@@ -156,6 +157,9 @@ static bool is_dest_modified(obs_properties_t *props, obs_property_t *unused,
 						    SETTING_DESTINATION_PATH),
 				 type == SETTING_DESTINATION_PATH_ID);
 	obs_property_set_visible(obs_properties_get(props,
+						    SETTING_DESTINATION_PATH_INFO),
+				 type == SETTING_DESTINATION_PATH_ID);
+	obs_property_set_visible(obs_properties_get(props,
 						    SETTING_DESTINATION_URL),
 				 type == SETTING_DESTINATION_URL_ID);
 	obs_property_set_visible(obs_properties_get(props,
@@ -215,6 +219,9 @@ static obs_properties_t *screenshot_filter_properties(void *data)
 				"*.*", NULL);
 	obs_properties_add_path(props, SETTING_DESTINATION_PATH, "Destination",
 				OBS_PATH_FILE_SAVE, "*.*", NULL);
+	obs_properties_add_text(props, SETTING_DESTINATION_PATH_INFO,
+				"\"YYYY-MM-DDThh-mm-ss\" (and only that) will be replaced with the current ISO timestamp in the file name.\r\nFile extension will be added automatically.",
+				OBS_TEXT_INFO);
 	obs_properties_add_text(props, SETTING_DESTINATION_URL,
 				"Destination (url)", OBS_TEXT_DEFAULT);
 	obs_properties_add_text(props, SETTING_DESTINATION_SHMEM,
@@ -680,7 +687,42 @@ static bool write_data(const char *destination, uint8_t *data, size_t len,
 	bool success = false;
 
 	if (destination_type == SETTING_DESTINATION_PATH_ID) {
-		FILE *of = fopen(destination, "wb");
+		char formatted_destination[260];
+		int dest_length = snprintf(
+			formatted_destination, 259,
+			"%s", destination);
+		char * pch;
+		pch = strstr(formatted_destination, "YYYY-MM-DDThh-mm-ss");
+		if (pch != NULL) {
+			time_t nowunixtime = time(NULL);
+			struct tm *nowtime = localtime(&nowunixtime);
+			char timestring[20];
+
+			snprintf(
+				timestring, 20,
+				"%04d-%02d-%02dT%02d-%02d-%02d",
+				nowtime->tm_year + 1900, nowtime->tm_mon + 1,
+				nowtime->tm_mday, nowtime->tm_hour,
+				nowtime->tm_min, nowtime->tm_sec);
+			memcpy(pch, timestring, 19 * sizeof(char));
+		}
+		if (!strcmp(content_type, "image/png")) {
+			dest_length = snprintf(
+				formatted_destination, 259, "%s.png",
+				formatted_destination);
+		}
+		else
+		{
+			dest_length = snprintf(
+				formatted_destination, 259, "%s.raw",
+				formatted_destination);
+		}
+
+		if (dest_length <= 0) {
+			return;
+		}
+
+		FILE *of = fopen(formatted_destination, "wb");
 
 		if (of != NULL) {
 			//info("write %s (%d bytes)", destination, len);
@@ -710,7 +752,7 @@ static bool write_data(const char *destination, uint8_t *data, size_t len,
 
 			int dest_length = snprintf(
 				_file_destination, 259,
-				"%s/%d-%02d-%02d_%02d-%02d-%02d", destination,
+				"%s/%04d-%02d-%02dT%02d-%02d-%02d", destination,
 				nowtime->tm_year + 1900, nowtime->tm_mon + 1,
 				nowtime->tm_mday, nowtime->tm_hour,
 				nowtime->tm_min, nowtime->tm_sec);
