@@ -233,7 +233,7 @@ static obs_properties_t *screenshot_filter_properties(void *data)
 					   is_timer_enable_modified);
 
 	obs_properties_add_float(props, SETTING_INTERVAL, "Interval (seconds)",
-				 0.25, 86400, 0.0001);
+				 0.01, 86400, 0.01);
 
 	obs_properties_add_bool(props, SETTING_RAW, "Raw image");
 
@@ -245,7 +245,7 @@ static void screenshot_filter_defaults(obs_data_t *settings)
 	obs_data_set_default_double(settings, SETTING_DESTINATION_TYPE,
 				    SETTING_DESTINATION_FOLDER_ID);
 	obs_data_set_default_bool(settings, SETTING_TIMER, false);
-	obs_data_set_default_double(settings, SETTING_INTERVAL, 2.0f);
+	obs_data_set_default_double(settings, SETTING_INTERVAL, 0.01f);
 	obs_data_set_default_bool(settings, SETTING_RAW, false);
 }
 
@@ -309,7 +309,7 @@ static void *screenshot_filter_create(obs_data_t *settings,
 	}
 	info("Created image writer thread %d", filter);
 
-	filter->interval = 2.0f;
+	filter->interval = 0.01f;
 	filter->shmem_name[0] = '\0';
 
 	filter->mutex = CreateMutexA(NULL, FALSE, NULL);
